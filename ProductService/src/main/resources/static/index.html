@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Product Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #F5F2ED;
+            --surface:   #FFFFFF;
+            --border:    #E2DEDA;
+            --accent:    #C9622F;
+            --accent-lt: #F4E9E1;
+            --text:      #1C1714;
+            --muted:     #7A6F68;
+            --danger:    #B83232;
+            --success:   #2E7D56;
+            --shadow:    0 2px 12px rgba(0,0,0,0.07);
+            --radius:    10px;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        .logo {
+            font-family: 'Fraunces', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+        .logo span { color: var(--text); }
+        .api-badge {
+            font-size: 0.72rem;
+            font-weight: 500;
+            background: var(--accent-lt);
+            color: var(--accent);
+            padding: 3px 10px;
+            border-radius: 99px;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem;
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .card-body { padding: 1.5rem; }
+
+        /* ── Form ── */
+        .form-group { margin-bottom: 1rem; }
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            background: var(--bg);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.92rem;
+            color: var(--text);
+            transition: border-color 0.18s, box-shadow 0.18s;
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(201,98,47,0.12);
+            background: #fff;
+        }
+        textarea { resize: vertical; min-height: 72px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.6rem 1.2rem;
+            border-radius: 7px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--accent); color: #fff; width: 100%; justify-content: center; padding: 0.7rem; }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-danger  { background: transparent; color: var(--danger); border: 1px solid #f0c0c0; padding: 4px 10px; font-size: 0.8rem; }
+        .btn-danger:hover { background: #fdeaea; }
+        .btn-icon { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 4px 9px; }
+        .btn-icon:hover { background: var(--bg); }
+
+        /* ── Toast ── */
+        #toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            padding: 0.7rem 1.2rem;
+            border-radius: var(--radius);
+            font-size: 0.88rem;
+            font-weight: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 999;
+        }
+        #toast.show { opacity: 1; }
+        #toast.success { background: #d4edda; color: var(--success); border: 1px solid #b2dfcc; }
+        #toast.error   { background: #fdeaea; color: var(--danger);  border: 1px solid #f5c6c6; }
+
+        /* ── Products Panel ── */
+        .panel-top {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        #searchInput {
+            flex: 1;
+            padding: 0.5rem 0.85rem;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            background: var(--bg);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            color: var(--text);
+            outline: none;
+        }
+        #searchInput:focus { border-color: var(--accent); background: #fff; }
+        .count-badge {
+            background: var(--accent-lt);
+            color: var(--accent);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 2px 9px;
+            border-radius: 99px;
+        }
+
+        /* ── Product Table ── */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        thead tr { border-bottom: 2px solid var(--border); }
+        th {
+            text-align: left;
+            padding: 0.65rem 0.85rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.12s;
+        }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: var(--bg); }
+        td { padding: 0.75rem 0.85rem; vertical-align: middle; }
+        .product-name { font-weight: 500; color: var(--text); }
+        .product-desc { color: var(--muted); font-size: 0.8rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .price { font-family: 'Fraunces', serif; font-weight: 500; color: var(--accent); }
+        .category-chip {
+            display: inline-block;
+            background: var(--accent-lt);
+            color: var(--accent);
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 99px;
+        }
+        .stock-low  { color: var(--danger); font-weight: 500; }
+        .stock-ok   { color: var(--success); }
+        .stock-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 99px;
+            letter-spacing: 0.3px;
+        }
+        .stock-badge.in  { background: #d4f3e5; color: var(--success); }
+        .stock-badge.out { background: #fdeaea; color: var(--danger); }
+
+        /* ── Pagination ── */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 1.2rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.82rem;
+            color: var(--muted);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .page-controls { display: flex; align-items: center; gap: 0.4rem; }
+        .page-btn {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text);
+            transition: background 0.12s, border-color 0.12s;
+        }
+        .page-btn:hover:not(:disabled) { background: var(--accent-lt); border-color: var(--accent); color: var(--accent); }
+        .page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+        .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .page-size-select {
+            padding: 3px 6px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem;
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            outline: none;
+        }
+        .page-size-select:focus { border-color: var(--accent); }
+
+        /* ── Empty / Loading states ── */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--muted);
+        }
+        .empty-state svg { opacity: 0.3; margin-bottom: 0.75rem; }
+        .empty-state p { font-size: 0.9rem; }
+
+        .spinner {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Detail drawer ── */
+        #detailOverlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.25);
+            z-index: 200;
+            display: none;
+            align-items: flex-start;
+            justify-content: flex-end;
+        }
+        #detailOverlay.open { display: flex; }
+        #detailPanel {
+            background: var(--surface);
+            width: 360px;
+            height: 100%;
+            overflow-y: auto;
+            padding: 2rem 1.75rem;
+            border-left: 1px solid var(--border);
+            box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+            animation: slideIn 0.22s ease;
+        }
+        @keyframes slideIn { from { transform: translateX(30px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+        #detailPanel h2 { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 500; margin-bottom: 1.5rem; }
+        .detail-row { margin-bottom: 1rem; }
+        .detail-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); font-weight: 500; margin-bottom: 3px; }
+        .detail-value { font-size: 0.95rem; }
+        .close-btn { float: right; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--muted); line-height: 1; }
+        .close-btn:hover { color: var(--text); }
+
+        /* ── Image ── */
+        .img-thumb {
+            width: 40px; height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            display: block;
+        }
+        .img-placeholder {
+            width: 40px; height: 40px;
+            border-radius: 6px;
+            border: 1px dashed var(--border);
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--border);
+        }
+        .drawer-img {
+            width: 100%; aspect-ratio: 16/9;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            background: var(--bg);
+        }
+        .drawer-img-placeholder {
+            width: 100%; aspect-ratio: 16/9;
+            border-radius: 8px;
+            border: 1px dashed var(--border);
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--muted); font-size: 0.82rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 780px) {
+            .container { grid-template-columns: 1fr; }
+            #detailPanel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">Product<span>Manager</span></div>
+    <div style="display:flex;align-items:center;gap:1rem;">
+        <span id="serverStatus" class="api-badge">⬤ Connecting…</span>
+        <span class="api-badge">:8081</span>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- ── Add / Form Panel ── -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Add Product</span>
+                <span id="formMode" class="api-badge">POST</span>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input id="fName" type="text" placeholder="e.g. Wireless Headphones"/>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="fDesc" placeholder="Short description…"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price (₹)</label>
+                        <input id="fPrice" type="number" min="0" step="0.01" placeholder="0.00"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock</label>
+                        <input id="fStock" type="number" min="0" placeholder="0"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input id="fCategory" type="text" placeholder="e.g. Electronics"/>
+                </div>
+                <div class="form-group">
+                    <label>Image URL</label>
+                    <input id="fImageUrl" type="url" placeholder="https://example.com/image.jpg"/>
+                    <div id="imgPreview" style="margin-top:0.5rem;display:none;">
+                        <img id="imgPreviewEl" src="" alt="Preview" style="width:100%;max-height:140px;object-fit:cover;border-radius:7px;border:1px solid var(--border);"/>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="submitForm()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span id="submitLabel">Create Product</span>
+                </button>
+                <div id="cancelEdit" style="display:none; margin-top:0.6rem; text-align:center;">
+                    <button class="btn btn-icon" onclick="cancelEdit()" style="width:100%;justify-content:center;">Cancel Edit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Products Table ── -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Products</span>
+                <div class="panel-top">
+                    <input id="searchInput" placeholder="Search…" oninput="filterTable()" />
+                    <span id="countBadge" class="count-badge">0</span>
+                    <button class="btn btn-icon" onclick="loadProducts()" title="Refresh">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th></th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="productTable">
+                    <tr><td colspan="8"><div class="empty-state"><span class="spinner"></span></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- ── Pagination ── -->
+            <div class="pagination">
+                <span id="pageInfo" style="color:var(--muted);font-size:0.8rem;">—</span>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <div class="page-controls" id="pageControls"></div>
+                    <div style="width:1px;height:16px;background:var(--border);margin:0 4px;"></div>
+                    <select class="page-size-select" id="pageSizeSelect" onchange="changePageSize()" title="Rows per page">
+                        <option value="5">5 / page</option>
+                        <option value="10" selected>10 / page</option>
+                        <option value="20">20 / page</option>
+                        <option value="50">50 / page</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── Detail Drawer ── -->
+<div id="detailOverlay" onclick="closeDetail(event)">
+    <div id="detailPanel">
+        <button class="close-btn" onclick="closeDrawer()">×</button>
+        <div id="dImageWrap" class="drawer-img-placeholder">No image</div>
+        <h2 id="dName">—</h2>
+        <div class="detail-row"><div class="detail-label">ID</div><div class="detail-value" id="dId">—</div></div>
+        <div class="detail-row"><div class="detail-label">Description</div><div class="detail-value" id="dDesc">—</div></div>
+        <div class="detail-row"><div class="detail-label">Category</div><div class="detail-value" id="dCategory">—</div></div>
+        <div class="detail-row"><div class="detail-label">Price</div><div class="detail-value price" id="dPrice">—</div></div>
+        <div class="detail-row"><div class="detail-label">Stock</div><div class="detail-value" id="dStock">—</div></div>
+        <div class="detail-row"><div class="detail-label">Stock Status</div><div class="detail-value" id="dStockStatus">—</div></div>
+        <div class="detail-row"><div class="detail-label">Image URL</div><div class="detail-value" id="dImageUrl" style="word-break:break-all;font-size:0.8rem;color:var(--muted)">—</div></div>
+        <div style="margin-top:2rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <button class="btn btn-primary" style="flex:1" onclick="editFromDrawer()">Edit</button>
+            <button class="btn btn-danger" style="flex:1; justify-content:center;" onclick="deleteFromDrawer()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<script>
+    const BASE = 'http://localhost:8081/products';
+    let allProducts   = [];
+    let editingId     = null;
+    let drawerProduct = null;
+
+    // Pagination state
+    let currentPage  = 0;
+    let pageSize     = 10;
+    let totalPages   = 0;
+    let totalElements = 0;
+
+    /* ── Helpers ── */
+    function toast(msg, type='success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `show ${type}`;
+        setTimeout(() => t.className = '', 2800);
+    }
+
+    function setStatus(ok) {
+        const el = document.getElementById('serverStatus');
+        el.textContent = ok ? '⬤ Connected' : '⬤ Offline';
+        el.style.background = ok ? '#d4f3e5' : '#fdeaea';
+        el.style.color = ok ? '#2E7D56' : '#B83232';
+    }
+
+    /* ── Load Page ── */
+    async function loadProducts(page = currentPage) {
+        try {
+            const res = await fetch(`${BASE}?page=${page}&size=${pageSize}&sort=id,asc`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            setStatus(true);
+
+            // Spring Page fields
+            allProducts    = data.content;
+            currentPage    = data.number;
+            totalPages     = data.totalPages;
+            totalElements  = data.totalElements;
+
+            renderTable(allProducts);
+            renderPagination();
+        } catch {
+            setStatus(false);
+            renderEmpty('Could not reach the server. Is it running on :8081?');
+        }
+    }
+
+    /* ── Render Table ── */
+    function renderTable(products) {
+        const tbody = document.getElementById('productTable');
+        // Show total elements in badge
+        document.getElementById('countBadge').textContent = totalElements;
+        if (!products.length) { renderEmpty('No products found.'); return; }
+        tbody.innerHTML = products.map(p => {
+            const isIn = p.stockStatus === 'IN_STOCK';
+            const rawUrl = p.imageUrl || '';
+            const thumb = rawUrl
+                ? `<img class="img-thumb" src="${rawUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="img-placeholder" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`
+                : `<div class="img-placeholder"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+            return `
+      <tr>
+        <td style="color:var(--muted);font-size:0.78rem">#${p.id}</td>
+        <td>${thumb}</td>
+        <td>
+          <div class="product-name">${esc(p.name)}</div>
+          <div class="product-desc">${esc(p.description || '—')}</div>
+        </td>
+        <td><span class="category-chip">${esc(p.category || '—')}</span></td>
+        <td class="price">₹${Number(p.price).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+        <td style="font-weight:500;color:var(--text)">${p.stock}</td>
+        <td>
+          <span class="stock-badge ${isIn ? 'in' : 'out'}">
+            ${isIn ? '⬤ In Stock' : '⬤ Out of Stock'}
+          </span>
+        </td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-icon" onclick="openDrawer(${p.id})" title="View">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </td>
+      </tr>
+    `}).join('');
+    }
+
+    /* ── Render Pagination ── */
+    function renderPagination() {
+        const start = totalElements === 0 ? 0 : currentPage * pageSize + 1;
+        const end   = Math.min((currentPage + 1) * pageSize, totalElements);
+        document.getElementById('pageInfo').textContent =
+            `${start}–${end} of ${totalElements}`;
+
+        const ctrl = document.getElementById('pageControls');
+        if (totalPages <= 1) { ctrl.innerHTML = ''; return; }
+
+        let html = `<button class="page-btn" onclick="loadProducts(0)" ${currentPage===0?'disabled':''}>«</button>`;
+        html    += `<button class="page-btn" onclick="loadProducts(${currentPage-1})" ${currentPage===0?'disabled':''}>‹</button>`;
+
+        // Show window of pages around current
+        const window_size = 3;
+        let start_p = Math.max(0, currentPage - 1);
+        let end_p   = Math.min(totalPages - 1, start_p + window_size - 1);
+        if (end_p - start_p < window_size - 1) start_p = Math.max(0, end_p - window_size + 1);
+
+        if (start_p > 0) html += `<span style="color:var(--muted);padding:0 2px">…</span>`;
+        for (let i = start_p; i <= end_p; i++) {
+            html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="loadProducts(${i})">${i+1}</button>`;
+        }
+        if (end_p < totalPages - 1) html += `<span style="color:var(--muted);padding:0 2px">…</span>`;
+
+        html += `<button class="page-btn" onclick="loadProducts(${currentPage+1})" ${currentPage===totalPages-1?'disabled':''}>›</button>`;
+        html += `<button class="page-btn" onclick="loadProducts(${totalPages-1})" ${currentPage===totalPages-1?'disabled':''}>»</button>`;
+        ctrl.innerHTML = html;
+    }
+
+    function changePageSize() {
+        pageSize    = parseInt(document.getElementById('pageSizeSelect').value);
+        currentPage = 0;
+        loadProducts(0);
+    }
+
+    function renderEmpty(msg) {
+        document.getElementById('productTable').innerHTML = `
+      <tr><td colspan="8">
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <p>${msg}</p>
+        </div>
+      </td></tr>`;
+        document.getElementById('countBadge').textContent = '0';
+        document.getElementById('pageInfo').textContent   = '0–0 of 0';
+        document.getElementById('pageControls').innerHTML = '';
+    }
+
+    function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+    /* ── Search (client-side on current page) ── */
+    function filterTable() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        if (!q) { renderTable(allProducts); return; }
+        const filtered = allProducts.filter(p =>
+            (p.name||'').toLowerCase().includes(q) ||
+            (p.category||'').toLowerCase().includes(q) ||
+            (p.description||'').toLowerCase().includes(q)
+        );
+        // Render filtered without touching pagination info
+        const tbody = document.getElementById('productTable');
+        if (!filtered.length) { renderEmpty('No matching products on this page.'); return; }
+        tbody.innerHTML = filtered.map(p => {
+            const isIn = p.stockStatus === 'IN_STOCK';
+            const thumb = p.imageUrl
+                ? `<img class="img-thumb" src="${p.imageUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="img-placeholder" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`
+                : `<div class="img-placeholder"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+            return `
+      <tr>
+        <td style="color:var(--muted);font-size:0.78rem">#${p.id}</td>
+        <td>${thumb}</td>
+        <td>
+          <div class="product-name">${esc(p.name)}</div>
+          <div class="product-desc">${esc(p.description || '—')}</div>
+        </td>
+        <td><span class="category-chip">${esc(p.category || '—')}</span></td>
+        <td class="price">₹${Number(p.price).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+        <td style="font-weight:500;color:var(--text)">${p.stock}</td>
+        <td><span class="stock-badge ${isIn ? 'in' : 'out'}">${isIn ? '⬤ In Stock' : '⬤ Out of Stock'}</span></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-icon" onclick="openDrawer(${p.id})" title="View">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </td>
+      </tr>`
+        }).join('');
+    }
+
+    /* ── Create / Update ── */
+    async function submitForm() {
+        const body = {
+            name:        document.getElementById('fName').value.trim(),
+            description: document.getElementById('fDesc').value.trim(),
+            price:       parseFloat(document.getElementById('fPrice').value) || 0,
+            stock:       parseInt(document.getElementById('fStock').value)   || 0,
+            category:    document.getElementById('fCategory').value.trim(),
+            imageUrl:    document.getElementById('fImageUrl').value.trim() || null,
+        };
+        if (!body.name) { toast('Name is required', 'error'); return; }
+
+        const url    = editingId ? `${BASE}/${editingId}` : BASE;
+        const method = editingId ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error();
+            toast(editingId ? 'Product updated!' : 'Product created!');
+            clearForm();
+            loadProducts(editingId ? currentPage : 0);
+        } catch {
+            toast('Request failed. Check the server.', 'error');
+        }
+    }
+
+    function clearForm() {
+        ['fName','fDesc','fPrice','fStock','fCategory','fImageUrl'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('imgPreview').style.display = 'none';
+        editingId = null;
+        document.getElementById('submitLabel').textContent  = 'Create Product';
+        document.getElementById('formMode').textContent     = 'POST';
+        document.getElementById('cancelEdit').style.display = 'none';
+    }
+
+    function cancelEdit() { clearForm(); }
+
+    /* ── Drawer ── */
+    function openDrawer(id) {
+        drawerProduct = allProducts.find(p => p.id == id);
+        if (!drawerProduct) return;
+        document.getElementById('dName').textContent     = drawerProduct.name;
+        document.getElementById('dId').textContent       = '#' + drawerProduct.id;
+        document.getElementById('dDesc').textContent     = drawerProduct.description || '—';
+        document.getElementById('dCategory').textContent = drawerProduct.category    || '—';
+        document.getElementById('dPrice').textContent    = '₹' + Number(drawerProduct.price).toLocaleString('en-IN', {minimumFractionDigits:2});
+        document.getElementById('dStock').textContent    = drawerProduct.stock;
+        const isIn = drawerProduct.stockStatus === 'IN_STOCK';
+        document.getElementById('dStockStatus').innerHTML =
+            `<span class="stock-badge ${isIn ? 'in' : 'out'}">${isIn ? '⬤ In Stock' : '⬤ Out of Stock'}</span>`;
+        document.getElementById('dImageUrl').textContent  = drawerProduct.imageUrl || '—';
+        // Drawer image
+        const wrap = document.getElementById('dImageWrap');
+        if (drawerProduct.imageUrl) {
+            wrap.outerHTML = `<img id="dImageWrap" class="drawer-img" src="${drawerProduct.imageUrl}" alt="${esc(drawerProduct.name)}" onerror="this.outerHTML='<div id=dImageWrap class=drawer-img-placeholder>Image not available</div>'"/>`;
+        } else {
+            const el = document.getElementById('dImageWrap');
+            el.className = 'drawer-img-placeholder';
+            el.textContent = 'No image';
+        }
+        document.getElementById('detailOverlay').classList.add('open');
+    }
+
+    function closeDrawer() { document.getElementById('detailOverlay').classList.remove('open'); }
+    function closeDetail(e) { if (e.target === document.getElementById('detailOverlay')) closeDrawer(); }
+
+    function editFromDrawer() {
+        if (!drawerProduct) return;
+        closeDrawer();
+        document.getElementById('fName').value     = drawerProduct.name        || '';
+        document.getElementById('fDesc').value     = drawerProduct.description || '';
+        document.getElementById('fPrice').value    = drawerProduct.price       || '';
+        document.getElementById('fStock').value    = drawerProduct.stock       || '';
+        document.getElementById('fCategory').value = drawerProduct.category    || '';
+        document.getElementById('fImageUrl').value = drawerProduct.imageUrl    || '';
+        // Show preview if URL exists
+        if (drawerProduct.imageUrl) {
+            document.getElementById('imgPreviewEl').src    = drawerProduct.imageUrl;
+            document.getElementById('imgPreview').style.display = 'block';
+        }
+        editingId = drawerProduct.id;
+        document.getElementById('submitLabel').textContent  = 'Update Product';
+        document.getElementById('formMode').textContent     = 'PUT';
+        document.getElementById('cancelEdit').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deleteFromDrawer() {
+        if (!drawerProduct) return;
+        if (!confirm(`Delete "${drawerProduct.name}"?`)) return;
+        try {
+            const res = await fetch(`${BASE}/${drawerProduct.id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error();
+            toast('Product deleted');
+            closeDrawer();
+            // Go to prev page if last item on page was deleted
+            const newPage = allProducts.length === 1 && currentPage > 0 ? currentPage - 1 : currentPage;
+            loadProducts(newPage);
+        } catch {
+            toast('Delete failed', 'error');
+        }
+    }
+
+    /* ── Init ── */
+    document.getElementById('fImageUrl').addEventListener('input', function() {
+        const url = this.value.trim();
+        const preview = document.getElementById('imgPreview');
+        const img     = document.getElementById('imgPreviewEl');
+        if (url) {
+            img.src = url;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+
+    loadProducts(0);
+</script>
+</body>
+</html>
