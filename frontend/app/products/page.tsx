@@ -35,7 +35,7 @@ export default function ProductsPage() {
     }
   });
 
-  const categories = ['all', ...new Set((products || []).map((p: any) => p.category).filter(Boolean))];
+  const categories = ['all', ...new Set((products || []).map((p: any) => p.category).filter(Boolean))] as string[];
 
   return (
     <div className="flex flex-col min-h-screen">
