@@ -1,52 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useCart } from '@/hooks/useCart';
-import { useState } from 'react';
+import { useCartContext } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import { CART_API_URL, DEFAULT_USER_ID } from '@/lib/config';
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCart();
+  const { cart, removeFromCart, updateQuantity, loading } = useCartContext();
   const router = useRouter();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
-
-  const handleCheckout = async () => {
-    try {
-      setCheckoutLoading(true);
-      setCheckoutError(null);
-
-      const response = await fetch(`${CART_API_URL}/cart/checkout/${DEFAULT_USER_ID}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error('Checkout failed');
-      }
-
-      const order = await response.json();
-      console.log('[v0] Order created:', order);
-
-      // Redirect to order confirmation
-      router.push(`/order-confirmation/${order.id}`);
-    } catch (err) {
-      console.error('[v0] Checkout error:', err);
-      setCheckoutError(
-        err instanceof Error ? err.message : 'Failed to complete checkout'
-      );
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-4xl font-bold mb-12">Shopping Cart</h1>
 
-        {cartItems.length === 0 ? (
+        {!cart || cart.items.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🛒</div>
             <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
@@ -65,15 +32,23 @@ export default function CartPage() {
             {/* Cart Items */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg">
-                {cartItems.map((item) => (
+                {cart?.items.map((item) => (
                   <div
                     key={item.productId}
                     className="flex gap-6 p-6 border-b border-border last:border-b-0"
                   >
                     {/* Product Image */}
-                    <div className="w-24 h-24 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-                      📦
-                    </div>
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.productName}
+                        className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                        📦
+                      </div>
+                    )}
 
                     {/* Product Info */}
                     <div className="flex-1">
@@ -92,7 +67,8 @@ export default function CartPage() {
                                 Math.max(1, item.quantity - 1)
                               )
                             }
-                            className="px-3 py-1 text-primary hover:bg-secondary"
+                            disabled={loading}
+                            className="px-3 py-1 text-primary hover:bg-secondary disabled:opacity-50"
                           >
                             −
                           </button>
@@ -103,7 +79,8 @@ export default function CartPage() {
                             onClick={() =>
                               updateQuantity(item.productId, item.quantity + 1)
                             }
-                            className="px-3 py-1 text-primary hover:bg-secondary"
+                            disabled={loading}
+                            className="px-3 py-1 text-primary hover:bg-secondary disabled:opacity-50"
                           >
                             +
                           </button>
@@ -111,7 +88,8 @@ export default function CartPage() {
 
                         <button
                           onClick={() => removeFromCart(item.productId)}
-                          className="ml-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded transition-smooth"
+                          disabled={loading}
+                          className="ml-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded transition-smooth disabled:opacity-50"
                         >
                           Remove
                         </button>
@@ -147,7 +125,7 @@ export default function CartPage() {
                 <div className="space-y-4 mb-6 pb-6 border-b border-border">
                   <div className="flex justify-between text-muted">
                     <span>Subtotal</span>
-                    <span>${getTotalPrice().toFixed(2)}</span>
+                    <span>${cart?.totalPrice.toFixed(2) || '0.00'}</span>
                   </div>
                   <div className="flex justify-between text-muted">
                     <span>Shipping</span>
@@ -155,30 +133,23 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between text-muted">
                     <span>Tax</span>
-                    <span>${(getTotalPrice() * 0.08).toFixed(2)}</span>
+                    <span>${((cart?.totalPrice || 0) * 0.08).toFixed(2)}</span>
                   </div>
                 </div>
 
                 <div className="flex justify-between font-bold text-xl mb-6">
                   <span>Total</span>
                   <span className="text-accent">
-                    ${(getTotalPrice() * 1.08).toFixed(2)}
+                    ${(((cart?.totalPrice || 0) * 1.08).toFixed(2))}
                   </span>
                 </div>
 
-                {checkoutError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
-                    {checkoutError}
-                  </div>
-                )}
-
-                <button
-                  onClick={handleCheckout}
-                  disabled={checkoutLoading}
-                  className="w-full px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-smooth"
+                <Link
+                  href="/checkout"
+                  className="block w-full px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-gray-800 transition-smooth text-center"
                 >
-                  {checkoutLoading ? 'Processing...' : 'Proceed to Checkout'}
-                </button>
+                  Proceed to Checkout
+                </Link>
 
                 <p className="text-xs text-muted text-center mt-4">
                   Secure checkout powered by our payment processor
